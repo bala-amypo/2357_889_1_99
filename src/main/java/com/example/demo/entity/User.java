@@ -1,8 +1,13 @@
 package com.example.demo.entity;
+import jakarta.presistence.*;
+
 public class User{
+    @Id
     private long id;
     private String name;
     private String email;
-    priva
+    private String password;
+    private LocalDateTime createdAt;
+
 
 }
