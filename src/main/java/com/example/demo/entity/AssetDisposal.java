@@ -21,11 +21,11 @@ public class AssetDisposal {
 
     private LocalDateTime createdAt;
 
-    // default constructor
+    
     public AssetDisposal() {
     }
 
-    // parameterized constructor
+    
     public AssetDisposal(long id, String disposalMethod, Double disposalValue,
                          LocalDate disposalDate, LocalDateTime createdAt) {
         this.id = id;
@@ -35,7 +35,7 @@ public class AssetDisposal {
         this.createdAt = createdAt;
     }
 
-    // getters and setters
+    
     public long getId() {
         return id;
     }
