@@ -20,11 +20,10 @@ public class AssetLifecycleEvent {
 
     private LocalDateTime loggedAt;
 
-    // default constructor
+    
     public AssetLifecycleEvent() {
     }
 
-    // parameterized constructor
     public AssetLifecycleEvent(long id, String eventType, String eventDescription,
                                LocalDate eventDate, LocalDateTime loggedAt) {
         this.id = id;
@@ -34,7 +33,6 @@ public class AssetLifecycleEvent {
         this.loggedAt = loggedAt;
     }
 
-    // getters & setters
 
     public long getId() {
         return id;
