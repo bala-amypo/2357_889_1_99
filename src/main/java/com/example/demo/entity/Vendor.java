@@ -21,11 +21,11 @@ public class Vendor {
 
     private LocalDateTime createdAt;
 
-    // default constructor
+    
     public Vendor() {
     }
 
-    // parameterized constructor
+    
     public Vendor(Long id, String vendorName, String contactEmail, String phone, LocalDateTime createdAt) {
         this.id = id;
         this.vendorName = vendorName;
@@ -34,7 +34,7 @@ public class Vendor {
         this.createdAt = createdAt;
     }
 
-    // getters & setters
+    
     public Long getId() {
         return id;
     }
