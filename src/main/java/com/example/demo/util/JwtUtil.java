@@ -61,11 +61,19 @@ public class JwtUtil {
     }
 
     public boolean validateToken(String token, String email) {
-        return extractEmail(token).equals(email) && !isTokenExpired(token);
+        try {
+            return extractEmail(token).equals(email) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public boolean validateToken(String token) {
-        return !isTokenExpired(token);
+        try {
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public Claims getClaims(String token) {
