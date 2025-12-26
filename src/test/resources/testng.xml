@@ -1,0 +1,10 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Asset Lifecycle API Test Suite">
+
+    <test name="Integration Tests">
+        <packages>
+            <package name="com.example.demo"/>
+        </packages>
+    </test>
+
+</suite>
