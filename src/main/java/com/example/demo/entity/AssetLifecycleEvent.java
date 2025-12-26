@@ -1,7 +1,6 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,30 +10,35 @@ public class AssetLifecycleEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "asset_id", nullable = false)
     private Asset asset;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String eventType;
+    private AssetStatus eventType; // Changed from String to AssetStatus to match usage
 
-    @Column(nullable = false)
     private String eventDescription;
+    private LocalDateTime eventDate;
 
-    @Column(nullable = false)
-    private LocalDate eventDate;
-
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime loggedAt;
 
     public AssetLifecycleEvent() {}
 
-    public AssetLifecycleEvent(Asset asset, String eventType, String eventDescription, LocalDate eventDate) {
+    public AssetLifecycleEvent(Asset asset, AssetStatus eventType, String eventDescription, LocalDateTime eventDate) {
         this.asset = asset;
         this.eventType = eventType;
         this.eventDescription = eventDescription;
         this.eventDate = eventDate;
         this.loggedAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.loggedAt == null) {
+            this.loggedAt = LocalDateTime.now();
+        }
     }
 
     // Getters and Setters
@@ -44,14 +48,14 @@ public class AssetLifecycleEvent {
     public Asset getAsset() { return asset; }
     public void setAsset(Asset asset) { this.asset = asset; }
 
-    public String getEventType() { return eventType; }
-    public void setEventType(String eventType) { this.eventType = eventType; }
+    public AssetStatus getEventType() { return eventType; }
+    public void setEventType(AssetStatus eventType) { this.eventType = eventType; }
 
     public String getEventDescription() { return eventDescription; }
     public void setEventDescription(String eventDescription) { this.eventDescription = eventDescription; }
 
-    public LocalDate getEventDate() { return eventDate; }
-    public void setEventDate(LocalDate eventDate) { this.eventDate = eventDate; }
+    public LocalDateTime getEventDate() { return eventDate; }
+    public void setEventDate(LocalDateTime eventDate) { this.eventDate = eventDate; }
 
     public LocalDateTime getLoggedAt() { return loggedAt; }
     public void setLoggedAt(LocalDateTime loggedAt) { this.loggedAt = loggedAt; }
