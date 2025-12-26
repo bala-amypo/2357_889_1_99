@@ -21,3 +21,5 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(Collections.singletonMap("error", ex.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+
+
