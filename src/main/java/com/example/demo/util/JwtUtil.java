@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -15,7 +16,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    // FIXED: Secure 256-bit key (32 chars) to satisfy WeakKeyException
+    // Secure 256-bit key (32 chars)
     private static final String SECRET = "YourSuperSecretKeyMustBe32BytesLong!";
 
     private Key getSigningKey() {
@@ -35,25 +36,27 @@ public class JwtUtil {
                 .compact();
     }
 
-    // --- Extraction Methods (Restored for JwtFilter) ---
+    // --- Extraction Methods ---
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Method expected by your JwtFilter
     public String extractEmail(String token) {
         return extractUsername(token); 
     }
 
-    // Method expected by your JwtFilter
     public Long extractUserId(String token) {
         return extractClaim(token, claims -> claims.get("userId", Long.class));
     }
 
-    // Method expected by your JwtFilter
-    public List<?> extractRoles(String token) {
-        return extractClaim(token, claims -> claims.get("roles", List.class));
+    // FIXED: Converts the List returned by JWT library back to a Set for JwtFilter
+    public Set<String> extractRoles(String token) {
+        List<String> rolesList = extractClaim(token, claims -> claims.get("roles", List.class));
+        if (rolesList == null) {
+            return new HashSet<>();
+        }
+        return new HashSet<>(rolesList);
     }
 
     public Date extractExpiration(String token) {
@@ -65,7 +68,6 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    // Helper for your tests
     public Claims getClaims(String token) {
         return extractAllClaims(token);
     }
@@ -78,18 +80,16 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // --- Validation Methods ---
+    // --- Validation ---
 
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    // Simple validation (used by some tests)
     public Boolean validateToken(String token) {
         return !isTokenExpired(token);
     }
 
-    // Overloaded validation (used by JwtFilter)
     public Boolean validateToken(String token, String userEmail) {
         final String username = extractEmail(token);
         return (username.equals(userEmail) && !isTokenExpired(token));
