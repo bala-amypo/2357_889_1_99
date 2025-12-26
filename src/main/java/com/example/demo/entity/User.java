@@ -8,6 +8,7 @@ import java.util.Set;
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,7 +22,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -42,6 +43,12 @@ public class User {
         this.email = email;
         this.password = password;
         this.roles = roles;
+        // ❌ REMOVE createdAt from here
+    }
+
+    /* ✅ THIS IS THE KEY FIX */
+    @PrePersist
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
@@ -65,5 +72,7 @@ public class User {
     public void setRoles(Set<Role> roles) { this.roles = roles; }
 
     public Set<AssetDisposal> getApprovedDisposals() { return approvedDisposals; }
-    public void setApprovedDisposals(Set<AssetDisposal> approvedDisposals) { this.approvedDisposals = approvedDisposals; }
+    public void setApprovedDisposals(Set<AssetDisposal> approvedDisposals) {
+        this.approvedDisposals = approvedDisposals;
+    }
 }
