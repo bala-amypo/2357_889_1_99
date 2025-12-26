@@ -1,6 +1,6 @@
 package com.example.demo;
-import com.example.demo.entity.AssetStatus;
-import java.time.LocalDateTime;
+
+import com.example.demo.entity.AssetStatus; // <--- ADDED THIS IMPORT
 import com.example.demo.entity.*;
 import com.example.demo.repository.*;
 import com.example.demo.util.JwtUtil;
@@ -13,10 +13,10 @@ import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.*;
-import java.util.Optional;              
-
+import java.util.Optional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime; // Ensure this is imported
 import java.util.*;
 
 @Listeners({TestResultListener.class})
@@ -138,13 +138,14 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
             a.setPurchaseCost(1000.0);
             a.setVendor(vendor);
             a.setDepreciationRule(rule);
+            a.setStatus(AssetStatus.ACTIVE); // FIXED: Set initial status
 
             Asset saved = assetRepository.save(a);
             createdAssetId = saved.getId();
         }
     }
 
- @Test(priority = 1, groups = "servlet")
+    @Test(priority = 1, groups = "servlet")
     public void test01_contextLoadsAndPortIsOpen() {
         Assertions.assertThat(port).isGreaterThan(0);
     }
@@ -299,9 +300,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 19, groups = "crud")
     public void test19_logLifecycleEvent_authenticated_success() {
         AssetLifecycleEvent ev = new AssetLifecycleEvent();
-        ev.setEventType("AUDIT");
+        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Was "AUDIT"
         ev.setEventDescription("Initial audit event");
-        ev.setEventDate(LocalDate.now().minusDays(1));
+        ev.setEventDate(LocalDateTime.now().minusDays(1)); // FIXED: Was LocalDate
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
@@ -316,9 +317,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 20, groups = "crud")
     public void test20_logLifecycleEvent_futureDate_shouldFail_401_or_4xx() {
         AssetLifecycleEvent ev = new AssetLifecycleEvent();
-        ev.setEventType("AUDIT");
+        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Was "AUDIT"
         ev.setEventDescription("Future event");
-        ev.setEventDate(LocalDate.now().plusDays(5));
+        ev.setEventDate(LocalDateTime.now().plusDays(5)); // FIXED: Was LocalDate
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
@@ -412,9 +413,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 44, groups = "hibernate")
     public void test44_eventRepositoryCrud_saveAndRetrieve() {
         AssetLifecycleEvent ev = new AssetLifecycleEvent();
-        ev.setEventType("REPAIR");
+        ev.setEventType(AssetStatus.UNDER_MAINTENANCE); // FIXED: Was "REPAIR"
         ev.setEventDescription("Fixed hinge");
-        ev.setEventDate(LocalDate.now().minusDays(2));
+        ev.setEventDate(LocalDateTime.now().minusDays(2)); // FIXED: Was LocalDate
         Asset asset = assetRepository.findById(createdAssetId).orElseThrow();
         ev.setAsset(asset);
         AssetLifecycleEvent saved = eventRepository.save(ev);
@@ -549,69 +550,12 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(resp.getStatusCode().value()).isEqualTo(401);
     }
 
-    // @Test(priority = 73, groups = "security")
-    // public void test73_userCannotApproveDisposal_attemptForbidden403() {
-    //     // create disposal request first as admin
-    //     AssetDisposal disposal = new AssetDisposal();
-    //     disposal.setDisposalMethod("SCRAPPED");
-    //     disposal.setDisposalValue(10.0);
-    //     disposal.setDisposalDate(LocalDate.now().minusDays(1));
-    //     disposal.setAsset(assetRepository.findById(createdAssetId).orElseThrow());
-    //     disposal.setApprovedBy(userRepository.findById(adminUserId).orElseThrow()); // temp approver, service may override
-
-    //     HttpHeaders ah = new HttpHeaders();
-    //     ah.setBearerAuth(adminToken);
-    //     HttpEntity<AssetDisposal> reqEntity = new HttpEntity<>(disposal, ah);
-    //     ResponseEntity<AssetDisposal> createResp = restTemplate.exchange(baseUrl() + "/api/disposals/request/" + createdAssetId, HttpMethod.POST, reqEntity, AssetDisposal.class);
-    //     Assertions.assertThat(createResp.getStatusCode().is2xxSuccessful()).isTrue();
-    //     Long disposalId = createResp.getBody() != null ? createResp.getBody().getId() : null;
-    //     Assertions.assertThat(disposalId).isNotNull();
-
-    //     // normal user tries to approve -> should be 403
-    //     HttpHeaders uh = new HttpHeaders();
-    //     uh.setBearerAuth(userToken);
-    //     HttpEntity<Void> approveEntity = new HttpEntity<>(uh);
-
-    //     ResponseEntity<String> apr = restTemplate.exchange(baseUrl() + "/api/disposals/approve/" + disposalId + "/" + normalUserId, HttpMethod.PUT, approveEntity, String.class);
-    //     Assertions.assertThat(apr.getStatusCode().value()).isEqualTo(403);
-    // }
-
-    // @Test(priority = 74, groups = "security")
-    // public void test74_adminApprovesDisposal_success_andAssetStatusUpdated() {
-    //     // Create disposal first
-    //     AssetDisposal disposal = new AssetDisposal();
-    //     disposal.setDisposalMethod("SOLD");
-    //     disposal.setDisposalValue(20.0);
-    //     disposal.setDisposalDate(LocalDate.now().minusDays(1));
-    //     disposal.setAsset(assetRepository.findById(createdAssetId).orElseThrow());
-    //     disposal.setApprovedBy(userRepository.findById(adminUserId).orElseThrow());
-
-    //     HttpHeaders ah = new HttpHeaders();
-    //     ah.setBearerAuth(adminToken);
-    //     HttpEntity<AssetDisposal> reqEntity = new HttpEntity<>(disposal, ah);
-    //     ResponseEntity<AssetDisposal> createResp = restTemplate.exchange(baseUrl() + "/api/disposals/request/" + createdAssetId, HttpMethod.POST, reqEntity, AssetDisposal.class);
-    //     Assertions.assertThat(createResp.getStatusCode().is2xxSuccessful()).isTrue();
-    //     Long disposalId = createResp.getBody() != null ? createResp.getBody().getId() : null;
-    //     Assertions.assertThat(disposalId).isNotNull();
-
-    //     // Approve as admin
-    //     HttpEntity<Void> approveEntity = new HttpEntity<>(ah);
-    //     ResponseEntity<AssetDisposal> approveResp = restTemplate.exchange(baseUrl() + "/api/disposals/approve/" + disposalId + "/" + adminUserId, HttpMethod.PUT, approveEntity, AssetDisposal.class);
-    //     Assertions.assertThat(approveResp.getStatusCode().is2xxSuccessful()).isTrue();
-    //     AssetDisposal updated = approveResp.getBody();
-    //     Assertions.assertThat(updated).isNotNull();
-    //     // After approval, asset should have status DISPOSED (service should update)
-    //     Asset disposedAsset = assetRepository.findById(createdAssetId).orElseThrow();
-    //     Assertions.assertThat(disposedAsset.getStatus()).isEqualTo("DISPOSED");
-    // }
-
     @Test(priority = 75, groups = "security")
     public void test75_jwt_containsEmailUserIdAndRoles_claimsPresent() {
         User admin = userRepository.findById(adminUserId).orElseThrow();
         Set<String> roles = new HashSet<>();
         admin.getRoles().forEach(r -> roles.add(r.getName()));
         String token = jwtUtil.generateToken(admin.getEmail(), admin.getId(), roles);
-        org.springframework.security.core.userdetails.User dummy = null; // no-op; just ensure token created
 
         var claims = jwtUtil.getClaims(token);
         Assertions.assertThat(claims.get("email")).isEqualTo(admin.getEmail());
@@ -660,6 +604,7 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         a.setPurchaseCost(100.0);
         a.setVendor(vendorRepository.findById(createdVendorId).orElseThrow());
         a.setDepreciationRule(ruleRepository.findById(createdRuleId).orElseThrow());
+        a.setStatus(AssetStatus.ACTIVE); // FIXED: Added status
         Asset savedAsset = assetRepository.save(a);
 
         AssetDisposal disposal = new AssetDisposal();
@@ -683,20 +628,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     // -----------------------------------------------------------------------------------------
     // 9) Edge / negative tests to reach minimum count
     // -----------------------------------------------------------------------------------------
-
-    // @Test(priority = 90, groups = "edge")
-    // public void test90_createVendor_invalidEmail_shouldReturn4xx_or_401() {
-    //     Vendor v = new Vendor();
-    //     v.setVendorName("BadEmail-" + UUID.randomUUID());
-    //     v.setContactEmail("not-an-email");
-
-    //     HttpHeaders headers = new HttpHeaders();
-    //     headers.setBearerAuth(adminToken);
-    //     HttpEntity<Vendor> entity = new HttpEntity<>(v, headers);
-
-    //     ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/vendors", HttpMethod.POST, entity, String.class);
-    //     Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
-    // }
 
     @Test(priority = 91, groups = "edge")
     public void test91_createRule_invalidMethod_shouldReturn4xx_or_401() {
@@ -729,34 +660,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
     }
 
-    // @Test(priority = 93, groups = "edge")
-    // public void test93_approveDisposal_nonAdmin_shouldReturn403_or_401() {
-    //     // create disposal as admin
-    //     AssetDisposal disposal = new AssetDisposal();
-    //     disposal.setDisposalMethod("SCRAPPED");
-    //     disposal.setDisposalValue(5.0);
-    //     disposal.setDisposalDate(LocalDate.now().minusDays(1));
-    //     disposal.setAsset(assetRepository.findById(createdAssetId).orElseThrow());
-    //     disposal.setApprovedBy(userRepository.findById(adminUserId).orElseThrow());
-
-    //     HttpHeaders ah = new HttpHeaders();
-    //     ah.setBearerAuth(adminToken);
-    //     HttpEntity<AssetDisposal> createEntity = new HttpEntity<>(disposal, ah);
-    //     ResponseEntity<AssetDisposal> created = restTemplate.exchange(baseUrl() + "/api/disposals/request/" + createdAssetId, HttpMethod.POST, createEntity, AssetDisposal.class);
-
-    //     if (created.getStatusCode().is2xxSuccessful() && created.getBody() != null) {
-    //         Long disposalId = created.getBody().getId();
-    //         HttpHeaders uh = new HttpHeaders();
-    //         uh.setBearerAuth(userToken);
-    //         HttpEntity<Void> approveEntity = new HttpEntity<>(uh);
-    //         ResponseEntity<String> apr = restTemplate.exchange(baseUrl() + "/api/disposals/approve/" + disposalId + "/" + normalUserId, HttpMethod.PUT, approveEntity, String.class);
-    //         Assertions.assertThat(apr.getStatusCode().value() == 403 || apr.getStatusCode().value() == 401).isTrue();
-    //     } else {
-    //         // If creation failed, accept 4xx or 401
-    //         Assertions.assertThat(created.getStatusCode().is4xxClientError() || created.getStatusCode().value() == 401).isTrue();
-    //     }
-    // }
-
     @Test(priority = 94, groups = "edge")
     public void test94_assetTagUniqueness_apiRejectsDuplicate() {
         Asset a = new Asset();
@@ -766,6 +669,7 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         a.setPurchaseCost(200.0);
         a.setVendor(vendorRepository.findById(createdVendorId).orElseThrow());
         a.setDepreciationRule(ruleRepository.findById(createdRuleId).orElseThrow());
+        a.setStatus(AssetStatus.ACTIVE);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
@@ -785,19 +689,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         vendorRepository.delete(saved);
         Assertions.assertThat(vendorRepository.findById(saved.getId())).isEmpty();
     }
-
-    // -----------------------------------------------------------------------------------------
-    // Extra tests added to reach 66 total
-    // -----------------------------------------------------------------------------------------
-
-    // @Test(priority = 120, groups = "security")
-    // public void test120_login_wrongPassword_shouldReturn401() {
-    //     Map<String, String> cred = new HashMap<>();
-    //     cred.put("email", "integration_admin@example.com");
-    //     cred.put("password", "wrongpass");
-    //     ResponseEntity<String> resp = restTemplate.postForEntity(baseUrl() + "/auth/login", cred, String.class);
-    //     Assertions.assertThat(resp.getStatusCode().value()).isEqualTo(401);
-    // }
 
     @Test(priority = 121, groups = "crud")
     public void test121_getVendor_invalidId_shouldReturn404_or_401() {
@@ -823,9 +714,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 123, groups = "crud")
     public void test123_logLifecycleEvent_missingDescription_shouldReturn4xx_or_401() {
         AssetLifecycleEvent ev = new AssetLifecycleEvent();
-        ev.setEventType("AUDIT");
+        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Was "AUDIT"
         ev.setEventDescription(""); // invalid
-        ev.setEventDate(LocalDate.now().minusDays(1));
+        ev.setEventDate(LocalDateTime.now().minusDays(1)); // FIXED: Was LocalDate
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
@@ -872,12 +763,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(rules).isNotNull();
     }
 
-    // End of 66 tests
-
-        // ---------------------------------------------------------
-    // Extra 10 tests (one per topic) to ensure minimum 65-70
-    // ---------------------------------------------------------
-
     // 1) servlet (smoke) - check content contains a known string (if index provides)
     @Test(priority = 201, groups = "servlet")
     public void test201_servlet_rootContainsSomething() {
@@ -886,30 +771,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(resp).isNotNull();
         Assertions.assertThat(resp.getBody() == null ? true : resp.getBody().length() >= 0).isTrue();
     }
-
-    // 2) crud - update a vendor via repository and verify change via API
-    // @Test(priority = 202, groups = "crud")
-    // public void test202_crud_updateVendor_andVerifyViaApi() {
-    //     Vendor v = vendorRepository.findById(createdVendorId).orElseThrow();
-    //     String newName = v.getVendorName() + "-UPD";
-    //     v.setVendorName(newName);
-    //     vendorRepository.save(v);
-
-    //     HttpHeaders headers = new HttpHeaders();
-    //     headers.setBearerAuth(adminToken);
-    //     HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-    //     ResponseEntity<Vendor> resp = restTemplate.exchange(baseUrl() + "/api/vendors/" + createdVendorId, HttpMethod.GET, entity, Vendor.class);
-    //     // Some setups may return 4xx due to security but adminToken should work
-    //     if (resp.getStatusCode().is2xxSuccessful()) {
-    //         Assertions.assertThat(resp.getBody()).isNotNull();
-    //         Assertions.assertThat(resp.getBody().getVendorName()).isEqualTo(newName);
-    //     } else {
-    //         // Accept 4xx (security) but ensure repository change persisted
-    //         Vendor reloaded = vendorRepository.findById(createdVendorId).orElseThrow();
-    //         Assertions.assertThat(reloaded.getVendorName()).isEqualTo(newName);
-    //     }
-    // }
 
     // 3) crud - delete a temporary vendor via API (or repository) and ensure gone
     @Test(priority = 203, groups = "crud")
@@ -938,12 +799,12 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 205, groups = "hibernate")
     public void test205_hibernate_updateAssetStatus_toMaintenance() {
         Asset a = assetRepository.findById(createdAssetId).orElseThrow();
-        a.setStatus("MAINTENANCE");
+        a.setStatus(AssetStatus.UNDER_MAINTENANCE); // FIXED: Was "MAINTENANCE"
         assetRepository.save(a);
         Asset reloaded = assetRepository.findById(createdAssetId).orElseThrow();
-        Assertions.assertThat(reloaded.getStatus()).isEqualTo("MAINTENANCE");
+        Assertions.assertThat(reloaded.getStatus()).isEqualTo(AssetStatus.UNDER_MAINTENANCE);
         // revert to ACTIVE to not affect other tests
-        reloaded.setStatus("ACTIVE");
+        reloaded.setStatus(AssetStatus.ACTIVE);
         assetRepository.save(reloaded);
     }
 
@@ -998,42 +859,4 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         List<Asset> assets = assetRepository.findByVendor(v);
         Assertions.assertThat(assets.size()).isGreaterThanOrEqualTo(1);
     }
-
-    // 10) final - ensure no orphan disposals referencing deleted assets (create then delete asset then check cascade)
-    // @Test(priority = 210, groups = "final")
-    // public void test210_final_noOrphanDisposals_afterAssetDelete() {
-    //     // create temporary asset and disposal, then delete asset and ensure disposal still consistent or removed
-    //     Asset a = new Asset();
-    //     a.setAssetTag("ORPHAN-TMP-" + UUID.randomUUID());
-    //     a.setAssetName("OrphanTmp");
-    //     a.setPurchaseDate(LocalDate.now().minusDays(5));
-    //     a.setPurchaseCost(10.0);
-    //     a.setVendor(vendorRepository.findById(createdVendorId).orElseThrow());
-    //     a.setDepreciationRule(ruleRepository.findById(createdRuleId).orElseThrow());
-    //     Asset saved = assetRepository.save(a);
-
-    //     AssetDisposal d = new AssetDisposal();
-    //     d.setAsset(saved);
-    //     d.setDisposalMethod("SCRAPPED");
-    //     d.setDisposalValue(1.0);
-    //     d.setDisposalDate(LocalDate.now().minusDays(1));
-    //     d.setApprovedBy(userRepository.findById(adminUserId).orElseThrow());
-    //     AssetDisposal savedDisp = disposalRepository.save(d);
-    //     Long dispId = savedDisp.getId();
-    //     Assertions.assertThat(dispId).isNotNull();
-
-    //     // delete asset
-    //     assetRepository.deleteById(saved.getId());
-
-    //     // Try to load disposal; behavior varies: either disposal still present (referential integrity prevented deletion) or disposal removed.
-    //     boolean disposalExists;
-    //     try {
-    //         disposalExists = disposalRepository.findById(dispId).isPresent();
-    //     } catch (Exception e) {
-    //         disposalExists = false;
-    //     }
-    //     // Accept either but ensure no crash and repository responds
-    //     Assertions.assertThat(disposalExists == true || disposalExists == false).isTrue();
-    // }
-
 }
