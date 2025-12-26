@@ -1,6 +1,6 @@
 package com.example.demo;
 
-import com.example.demo.entity.AssetStatus; // <--- ADDED THIS IMPORT
+import com.example.demo.entity.AssetStatus; // <--- IMPORTS ENUM
 import com.example.demo.entity.*;
 import com.example.demo.repository.*;
 import com.example.demo.util.JwtUtil;
@@ -16,7 +16,7 @@ import org.testng.annotations.*;
 import java.util.Optional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime; // Ensure this is imported
+import java.time.LocalDateTime; // <--- IMPORTS LocalDateTime
 import java.util.*;
 
 @Listeners({TestResultListener.class})
@@ -51,13 +51,8 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         return "http://localhost:" + port;
     }
 
-    // ================================================================================================
-    // FIXED @BeforeClass — NO MORE DUPLICATE ASSET TAG ERROR
-    // ================================================================================================
-
     @BeforeClass
     public void setupData() {
-
         // --------- Roles ----------
         Role adminRole = roleRepository.findByName("ADMIN")
                 .orElseGet(() -> roleRepository.save(new Role("ADMIN")));
@@ -125,21 +120,19 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
 
         createdRuleId = rule.getId();
 
-        // --------- Asset — FIXED TO ALWAYS USE UNIQUE TAG ----------
+        // --------- Asset ----------
         List<Asset> assets = assetRepository.findByVendor(vendor);
-
         if (!assets.isEmpty()) {
             createdAssetId = assets.get(0).getId();
         } else {
             Asset a = new Asset();
-            a.setAssetTag("INTEG-TAG-" + UUID.randomUUID());  // FIXED — ALWAYS UNIQUE
+            a.setAssetTag("INTEG-TAG-" + UUID.randomUUID());
             a.setAssetName("IntegrationAsset");
             a.setPurchaseDate(LocalDate.now().minusDays(30));
             a.setPurchaseCost(1000.0);
             a.setVendor(vendor);
             a.setDepreciationRule(rule);
-            a.setStatus(AssetStatus.ACTIVE); // FIXED: Set initial status
-
+            a.setStatus(AssetStatus.ACTIVE); // FIXED: Enum
             Asset saved = assetRepository.save(a);
             createdAssetId = saved.getId();
         }
@@ -162,10 +155,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful() || resp.getStatusCode().is4xxClientError()).isTrue();
     }
 
-    // -----------------------------------------------------------------------------------------
-    // 2) Implement CRUD operations using Spring Boot and REST APIs
-    // -----------------------------------------------------------------------------------------
-
     @Test(priority = 10, groups = "crud")
     public void test10_createVendor_authenticated_success() {
         Vendor v = new Vendor();
@@ -185,10 +174,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
 
     @Test(priority = 11, groups = "crud")
     public void test11_createVendor_duplicateName_shouldFail_400_or_4xx() {
-        // create vendor with same name as existing createdVendorId to provoke unique constraint
         Vendor base = vendorRepository.findById(createdVendorId).orElseThrow();
         Vendor v = new Vendor();
-        v.setVendorName(base.getVendorName()); // duplicate
+        v.setVendorName(base.getVendorName());
         v.setContactEmail("dup-integ@example.com");
 
         HttpHeaders headers = new HttpHeaders();
@@ -204,7 +192,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         ResponseEntity<Vendor[]> resp = restTemplate.exchange(baseUrl() + "/api/vendors", HttpMethod.GET, entity, Vendor[].class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
         Assertions.assertThat(resp.getBody()).isNotEmpty();
@@ -221,11 +208,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<DepreciationRule> entity = new HttpEntity<>(r, headers);
-
         ResponseEntity<DepreciationRule> resp = restTemplate.exchange(baseUrl() + "/api/rules", HttpMethod.POST, entity, DepreciationRule.class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
-        DepreciationRule saved = resp.getBody();
-        Assertions.assertThat(saved).isNotNull();
+        Assertions.assertThat(resp.getBody()).isNotNull();
     }
 
     @Test(priority = 14, groups = "crud")
@@ -239,11 +224,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Asset> entity = new HttpEntity<>(a, headers);
-
         ResponseEntity<Asset> resp = restTemplate.exchange(baseUrl() + "/api/assets/" + createdVendorId + "/" + createdRuleId, HttpMethod.POST, entity, Asset.class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
-        Asset saved = resp.getBody();
-        Assertions.assertThat(saved).isNotNull();
+        Assertions.assertThat(resp.getBody()).isNotNull();
     }
 
     @Test(priority = 15, groups = "crud")
@@ -257,9 +240,7 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Asset> entity = new HttpEntity<>(a, headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/assets/" + createdVendorId + "/" + createdRuleId, HttpMethod.POST, entity, String.class);
-        // Your service previously returned 500 for negative cost; accept 5xx or 4xx
         Assertions.assertThat(resp.getStatusCode().is5xxServerError() || resp.getStatusCode().is4xxClientError()).isTrue();
     }
 
@@ -268,7 +249,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         ResponseEntity<Asset[]> resp = restTemplate.exchange(baseUrl() + "/api/assets", HttpMethod.GET, entity, Asset[].class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
         Assertions.assertThat(resp.getBody()).isNotEmpty();
@@ -279,12 +259,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         ResponseEntity<Asset> resp = restTemplate.exchange(baseUrl() + "/api/assets/" + createdAssetId, HttpMethod.GET, entity, Asset.class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
-        Asset body = resp.getBody();
-        Assertions.assertThat(body).isNotNull();
-        Assertions.assertThat(body.getId()).isEqualTo(createdAssetId);
+        Assertions.assertThat(resp.getBody().getId()).isEqualTo(createdAssetId);
     }
 
     @Test(priority = 18, groups = "crud")
@@ -292,7 +269,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         ResponseEntity<Asset[]> resp = restTemplate.exchange(baseUrl() + "/api/assets/status/ACTIVE", HttpMethod.GET, entity, Asset[].class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
     }
@@ -300,9 +276,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 19, groups = "crud")
     public void test19_logLifecycleEvent_authenticated_success() {
         AssetLifecycleEvent ev = new AssetLifecycleEvent();
-        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Was "AUDIT"
+        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Enum
         ev.setEventDescription("Initial audit event");
-        ev.setEventDate(LocalDateTime.now().minusDays(1)); // FIXED: Was LocalDate
+        ev.setEventDate(LocalDateTime.now().minusDays(1)); // FIXED: LocalDateTime
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
@@ -310,23 +286,20 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
 
         ResponseEntity<AssetLifecycleEvent> resp = restTemplate.exchange(baseUrl() + "/api/events/" + createdAssetId, HttpMethod.POST, entity, AssetLifecycleEvent.class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
-        AssetLifecycleEvent saved = resp.getBody();
-        Assertions.assertThat(saved).isNotNull();
+        Assertions.assertThat(resp.getBody()).isNotNull();
     }
 
     @Test(priority = 20, groups = "crud")
     public void test20_logLifecycleEvent_futureDate_shouldFail_401_or_4xx() {
         AssetLifecycleEvent ev = new AssetLifecycleEvent();
-        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Was "AUDIT"
+        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Enum
         ev.setEventDescription("Future event");
-        ev.setEventDate(LocalDateTime.now().plusDays(5)); // FIXED: Was LocalDate
+        ev.setEventDate(LocalDateTime.now().plusDays(5)); // FIXED: LocalDateTime
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<AssetLifecycleEvent> entity = new HttpEntity<>(ev, headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/events/" + createdAssetId, HttpMethod.POST, entity, String.class);
-        // Your app sometimes returns 401 (if security blocks) or 4xx validation; allow both.
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
     }
 
@@ -335,14 +308,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         ResponseEntity<AssetLifecycleEvent[]> resp = restTemplate.exchange(baseUrl() + "/api/events/asset/" + createdAssetId, HttpMethod.GET, entity, AssetLifecycleEvent[].class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
     }
-
-    // -----------------------------------------------------------------------------------------
-    // 3) Dependency Injection / IoC checks
-    // -----------------------------------------------------------------------------------------
 
     @Test(priority = 30, groups = "di")
     public void test30_roleRepositoryBeanExists() {
@@ -369,7 +337,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
 
     @Test(priority = 34, groups = "di")
     public void test34_mockRepositoryExample() {
-        // simple Mockito-style check (not replacing Spring bean)
         VendorRepository mockRepo = org.mockito.Mockito.mock(VendorRepository.class);
         Vendor v = new Vendor();
         v.setId(999L);
@@ -380,15 +347,10 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(opt.get().getVendorName()).isEqualTo("MockVendor");
     }
 
-    // -----------------------------------------------------------------------------------------
-    // 4) Hibernate & repository CRUD tests
-    // -----------------------------------------------------------------------------------------
-
     @Test(priority = 40, groups = "hibernate")
     public void test40_createAdminUser_persisted() {
         User admin = userRepository.findById(adminUserId).orElseThrow();
         Assertions.assertThat(admin).isNotNull();
-        Assertions.assertThat(admin.getId()).isEqualTo(adminUserId);
     }
 
     @Test(priority = 41, groups = "hibernate")
@@ -413,9 +375,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 44, groups = "hibernate")
     public void test44_eventRepositoryCrud_saveAndRetrieve() {
         AssetLifecycleEvent ev = new AssetLifecycleEvent();
-        ev.setEventType(AssetStatus.UNDER_MAINTENANCE); // FIXED: Was "REPAIR"
+        ev.setEventType(AssetStatus.UNDER_MAINTENANCE); // FIXED: Enum
         ev.setEventDescription("Fixed hinge");
-        ev.setEventDate(LocalDateTime.now().minusDays(2)); // FIXED: Was LocalDate
+        ev.setEventDate(LocalDateTime.now().minusDays(2)); // FIXED: LocalDateTime
         Asset asset = assetRepository.findById(createdAssetId).orElseThrow();
         ev.setAsset(asset);
         AssetLifecycleEvent saved = eventRepository.save(ev);
@@ -425,13 +387,8 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 45, groups = "hibernate")
     public void test45_assetUniqueTagConstraint_existsByTag() {
         boolean exists = assetRepository.existsByAssetTag("INTEG-TAG-001") || assetRepository.existsByAssetTag("TAG-INTEG-001");
-        // Accept either true/false depending on tag presence; ensure method works
         Assertions.assertThat(exists == true || exists == false).isTrue();
     }
-
-    // -----------------------------------------------------------------------------------------
-    // 5) JPA normalization checks
-    // -----------------------------------------------------------------------------------------
 
     @Test(priority = 50, groups = "jpa")
     public void test50_vendorNormalization_uniqueNamePersists() {
@@ -465,20 +422,14 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         DepreciationRule r = new DepreciationRule();
         r.setRuleName("BadRule-" + UUID.randomUUID());
         r.setMethod("STRAIGHT_LINE");
-        r.setUsefulLifeYears(0); // invalid
+        r.setUsefulLifeYears(0);
         r.setSalvageValue(0.0);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<DepreciationRule> entity = new HttpEntity<>(r, headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/rules", HttpMethod.POST, entity, String.class);
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
     }
-
-    // -----------------------------------------------------------------------------------------
-    // 6) Many-to-Many (User-Roles)
-    // -----------------------------------------------------------------------------------------
 
     @Test(priority = 60, groups = "manyToMany")
     public void test60_userRolesManyToMany_adminHasRole() {
@@ -511,13 +462,8 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(reloaded.getRoles()).isNotEmpty();
     }
 
-    // -----------------------------------------------------------------------------------------
-    // 7) Security & JWT checks
-    // -----------------------------------------------------------------------------------------
-
     @Test(priority = 70, groups = "security")
     public void test70_registerEndpoint_canRegisterAndLogin() {
-        // Register a unique user via /auth/register then login
         Map<String, String> reg = new HashMap<>();
         reg.put("email", "reg_user_" + UUID.randomUUID() + "@example.com");
         reg.put("password", "regpass");
@@ -539,7 +485,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         ResponseEntity<Asset[]> resp = restTemplate.exchange(baseUrl() + "/api/assets", HttpMethod.GET, entity, Asset[].class);
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
     }
@@ -563,10 +508,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(claimUserId).isEqualTo(admin.getId());
         Assertions.assertThat(claims.get("roles")).isNotNull();
     }
-
-    // -----------------------------------------------------------------------------------------
-    // 8) HQL / advanced queries via repositories
-    // -----------------------------------------------------------------------------------------
 
     @Test(priority = 80, groups = "hql")
     public void test80_findDisposalsByApprover_returnsList() {
@@ -596,7 +537,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
 
     @Test(priority = 84, groups = "hql")
     public void test84_disposalRepositorySaveAndFindByApprover() {
-        // Create temp asset -> disposal -> query by approver
         Asset a = new Asset();
         a.setAssetTag("TMP-" + UUID.randomUUID());
         a.setAssetName("TmpAsset");
@@ -604,7 +544,7 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         a.setPurchaseCost(100.0);
         a.setVendor(vendorRepository.findById(createdVendorId).orElseThrow());
         a.setDepreciationRule(ruleRepository.findById(createdRuleId).orElseThrow());
-        a.setStatus(AssetStatus.ACTIVE); // FIXED: Added status
+        a.setStatus(AssetStatus.ACTIVE); // FIXED: Enum
         Asset savedAsset = assetRepository.save(a);
 
         AssetDisposal disposal = new AssetDisposal();
@@ -625,10 +565,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(evs).isNotNull();
     }
 
-    // -----------------------------------------------------------------------------------------
-    // 9) Edge / negative tests to reach minimum count
-    // -----------------------------------------------------------------------------------------
-
     @Test(priority = 91, groups = "edge")
     public void test91_createRule_invalidMethod_shouldReturn4xx_or_401() {
         DepreciationRule r = new DepreciationRule();
@@ -636,11 +572,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         r.setMethod("INVALID_METHOD");
         r.setUsefulLifeYears(5);
         r.setSalvageValue(10.0);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<DepreciationRule> entity = new HttpEntity<>(r, headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/rules", HttpMethod.POST, entity, String.class);
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
     }
@@ -651,11 +585,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         disposal.setDisposalMethod("SCRAPPED");
         disposal.setDisposalValue(0.0);
         disposal.setDisposalDate(LocalDate.now().minusDays(1));
-
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<AssetDisposal> entity = new HttpEntity<>(disposal, headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/disposals/request/9999999", HttpMethod.POST, entity, String.class);
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
     }
@@ -663,18 +595,17 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 94, groups = "edge")
     public void test94_assetTagUniqueness_apiRejectsDuplicate() {
         Asset a = new Asset();
-        a.setAssetTag("INTEG-TAG-001"); // existing
+        a.setAssetTag("INTEG-TAG-001");
         a.setAssetName("DupAsset");
         a.setPurchaseDate(LocalDate.now().minusDays(2));
         a.setPurchaseCost(200.0);
         a.setVendor(vendorRepository.findById(createdVendorId).orElseThrow());
         a.setDepreciationRule(ruleRepository.findById(createdRuleId).orElseThrow());
-        a.setStatus(AssetStatus.ACTIVE);
+        a.setStatus(AssetStatus.ACTIVE); // FIXED: Enum
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Asset> entity = new HttpEntity<>(a, headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/assets/" + createdVendorId + "/" + createdRuleId, HttpMethod.POST, entity, String.class);
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().is5xxServerError()).isTrue();
     }
@@ -695,9 +626,7 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/vendors/9999999", HttpMethod.GET, entity, String.class);
-        // Some setups may return 401 if auth fails; otherwise 404 expected
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
     }
 
@@ -706,7 +635,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/assets/status/UNKNOWN_STATUS", HttpMethod.GET, entity, String.class);
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().is2xxSuccessful()).isTrue();
     }
@@ -714,14 +642,12 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
     @Test(priority = 123, groups = "crud")
     public void test123_logLifecycleEvent_missingDescription_shouldReturn4xx_or_401() {
         AssetLifecycleEvent ev = new AssetLifecycleEvent();
-        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Was "AUDIT"
-        ev.setEventDescription(""); // invalid
-        ev.setEventDate(LocalDateTime.now().minusDays(1)); // FIXED: Was LocalDate
-
+        ev.setEventType(AssetStatus.ACTIVE); // FIXED: Enum
+        ev.setEventDescription("");
+        ev.setEventDate(LocalDateTime.now().minusDays(1)); // FIXED: LocalDateTime
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<AssetLifecycleEvent> entity = new HttpEntity<>(ev, headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/events/" + createdAssetId, HttpMethod.POST, entity, String.class);
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
     }
@@ -733,11 +659,9 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         r.setMethod("STRAIGHT_LINE");
         r.setUsefulLifeYears(5);
         r.setSalvageValue(-10.0);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<DepreciationRule> entity = new HttpEntity<>(r, headers);
-
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/api/rules", HttpMethod.POST, entity, String.class);
         Assertions.assertThat(resp.getStatusCode().is4xxClientError() || resp.getStatusCode().value() == 401).isTrue();
     }
@@ -748,7 +672,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         d.setDisposalMethod("SCRAPPED");
         d.setDisposalValue(10.0);
         d.setDisposalDate(LocalDate.now().minusDays(1));
-
         ResponseEntity<String> resp = restTemplate.postForEntity(baseUrl() + "/api/disposals/request/" + createdAssetId, d, String.class);
         Assertions.assertThat(resp.getStatusCode().value()).isEqualTo(401);
     }
@@ -763,16 +686,12 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(rules).isNotNull();
     }
 
-    // 1) servlet (smoke) - check content contains a known string (if index provides)
     @Test(priority = 201, groups = "servlet")
     public void test201_servlet_rootContainsSomething() {
         ResponseEntity<String> resp = restTemplate.getForEntity(baseUrl() + "/", String.class);
-        // If app redirects or returns empty page, we still accept 2xx/3xx/4xx but try to assert non-null body
         Assertions.assertThat(resp).isNotNull();
-        Assertions.assertThat(resp.getBody() == null ? true : resp.getBody().length() >= 0).isTrue();
     }
 
-    // 3) crud - delete a temporary vendor via API (or repository) and ensure gone
     @Test(priority = 203, groups = "crud")
     public void test203_crud_deleteTempVendor_viaRepository() {
         Vendor temp = new Vendor();
@@ -785,39 +704,33 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(vendorRepository.findById(id)).isEmpty();
     }
 
-    // 4) di - ensure CustomUserDetailsService can load user by username (email)
     @Test(priority = 204, groups = "di")
     public void test204_di_customUserDetailsServiceLoadsUser() {
-        // Try to load admin via UserRepository to mimic user details loading
         java.util.Optional<User> uopt = userRepository.findByEmail("integration_admin@example.com");
         Assertions.assertThat(uopt).isPresent();
         User u = uopt.get();
         Assertions.assertThat(u.getEmail()).isEqualTo("integration_admin@example.com");
     }
 
-    // 5) hibernate - update asset status to MAINTENANCE and verify via repo
     @Test(priority = 205, groups = "hibernate")
     public void test205_hibernate_updateAssetStatus_toMaintenance() {
         Asset a = assetRepository.findById(createdAssetId).orElseThrow();
-        a.setStatus(AssetStatus.UNDER_MAINTENANCE); // FIXED: Was "MAINTENANCE"
+        a.setStatus(AssetStatus.UNDER_MAINTENANCE); // FIXED: Enum
         assetRepository.save(a);
         Asset reloaded = assetRepository.findById(createdAssetId).orElseThrow();
         Assertions.assertThat(reloaded.getStatus()).isEqualTo(AssetStatus.UNDER_MAINTENANCE);
-        // revert to ACTIVE to not affect other tests
+        // revert to ACTIVE
         reloaded.setStatus(AssetStatus.ACTIVE);
         assetRepository.save(reloaded);
     }
 
-    // 6) jpa - ensure the unique ruleName constraint behaves (via repository attempt)
     @Test(priority = 206, groups = "jpa")
     public void test206_jpa_ruleUniqueNameConstraint_repoCheck() {
         DepreciationRule r = new DepreciationRule();
-        r.setRuleName("IntegrationRule"); // existing ruleName from setup
+        r.setRuleName("IntegrationRule"); // existing ruleName
         r.setMethod("STRAIGHT_LINE");
         r.setUsefulLifeYears(2);
         r.setSalvageValue(0.0);
-
-        // Saving via repository may throw DataIntegrityViolationException; catch and assert occurs
         boolean failed = false;
         try {
             ruleRepository.saveAndFlush(r);
@@ -827,7 +740,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(failed).isTrue();
     }
 
-    // 7) manyToMany - ensure adding same role twice does not duplicate in set
     @Test(priority = 207, groups = "manyToMany")
     public void test207_manyToMany_addSameRoleTwice_noDuplication() {
         User u = userRepository.findById(normalUserId).orElseThrow();
@@ -840,7 +752,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(reloaded.getRoles().size()).isGreaterThanOrEqualTo(before);
     }
 
-    // 8) security - validate token validity and claims for normal user
     @Test(priority = 208, groups = "security")
     public void test208_security_tokenValidation_forNormalUser() {
         User u = userRepository.findById(normalUserId).orElseThrow();
@@ -852,7 +763,6 @@ public class FullIntegrationTest extends AbstractTestNGSpringContextTests {
         Assertions.assertThat(claims.get("email")).isEqualTo(u.getEmail());
     }
 
-    // 9) hql - count assets by vendor and assert >= 1
     @Test(priority = 209, groups = "hql")
     public void test209_hql_countAssetsByVendor_atLeastOne() {
         Vendor v = vendorRepository.findById(createdVendorId).orElseThrow();
