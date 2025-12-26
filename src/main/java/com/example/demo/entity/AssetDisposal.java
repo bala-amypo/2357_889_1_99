@@ -28,5 +28,3 @@ public class AssetDisposal {
     public void setApprovedBy(User approvedBy) { this.approvedBy = approvedBy; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
-
-
