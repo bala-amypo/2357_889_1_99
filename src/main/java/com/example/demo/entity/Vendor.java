@@ -1,4 +1,5 @@
 package com.example.demo.entity;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -20,7 +21,7 @@ public class Vendor {
 
     private String phone;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "vendor")
@@ -34,6 +35,13 @@ public class Vendor {
         this.contactEmail = contactEmail;
         this.phone = phone;
         this.createdAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
     }
 
     // Getters and Setters
