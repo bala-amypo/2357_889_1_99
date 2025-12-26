@@ -1,4 +1,3 @@
-
 package com.example.demo.service.impl;
 import com.example.demo.entity.DepreciationRule;
 import com.example.demo.repository.DepreciationRuleRepository;

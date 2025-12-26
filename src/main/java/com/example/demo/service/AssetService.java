@@ -7,5 +7,3 @@ public interface AssetService {
     Asset getAsset(Long id);
     List<Asset> getAssetsByStatus(String status);
 }
-
-
