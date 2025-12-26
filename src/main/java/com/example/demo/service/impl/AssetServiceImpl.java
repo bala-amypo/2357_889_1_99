@@ -45,7 +45,7 @@ public class AssetServiceImpl implements AssetService {
         
         asset.setVendor(vendor);
         asset.setDepreciationRule(rule);
-        asset.setStatus("ACTIVE");
+        asset.setStatus(AssetStatus.ACTIVE);
         asset.setCreatedAt(LocalDateTime.now());
         
         return assetRepository.save(asset);

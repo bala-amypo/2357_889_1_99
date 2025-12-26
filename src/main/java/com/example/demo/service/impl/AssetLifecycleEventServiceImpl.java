@@ -8,8 +8,7 @@ import com.example.demo.repository.AssetRepository;
 import com.example.demo.service.AssetLifecycleEventService;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalDateTime; // Updated import
 import java.util.List;
 
 @Service
@@ -28,7 +27,9 @@ public class AssetLifecycleEventServiceImpl implements AssetLifecycleEventServic
         Asset asset = assetRepository.findById(assetId)
             .orElseThrow(() -> new ResourceNotFoundException("Asset not found"));
         
-        if (event.getEventType() == null || event.getEventType().trim().isEmpty()) {
+        // FIX 1: 'eventType' is now an Enum (AssetStatus), so we only check for null.
+        // We removed .trim().isEmpty() because Enums don't have those methods.
+        if (event.getEventType() == null) {
             throw new IllegalArgumentException("Event type is required");
         }
         
@@ -36,11 +37,13 @@ public class AssetLifecycleEventServiceImpl implements AssetLifecycleEventServic
             throw new IllegalArgumentException("Event description must not be blank");
         }
         
-        if (event.getEventDate().isAfter(LocalDate.now())) {
+        // FIX 2: Changed LocalDate.now() to LocalDateTime.now() to match the data type of getEventDate()
+        if (event.getEventDate().isAfter(LocalDateTime.now())) {
             throw new IllegalArgumentException("Event date must not be in the future");
         }
         
         event.setAsset(asset);
+        // This is optional since we added @PrePersist in the entity, but safe to keep.
         event.setLoggedAt(LocalDateTime.now());
         
         return eventRepository.save(event);

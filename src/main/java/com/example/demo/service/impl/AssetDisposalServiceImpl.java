@@ -60,7 +60,7 @@ public class AssetDisposalServiceImpl implements AssetDisposalService {
         disposal.setApprovedBy(admin);
         
         Asset asset = disposal.getAsset();
-        asset.setStatus("DISPOSED");
+        asset.setStatus(AssetStatus.DISPOSED);
         assetRepository.save(asset);
         
         return disposalRepository.save(disposal);
