@@ -1,5 +1,5 @@
 package com.example.demo.service.impl;
-
+import com.example.demo.entity.AssetStatus;
 import com.example.demo.entity.Asset;
 import com.example.demo.entity.DepreciationRule;
 import com.example.demo.entity.Vendor;
