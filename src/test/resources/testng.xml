@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="AssetManagementTestSuite">
+    <test name="ContextTest">
+        <classes>
+            <class name="com.example.asset.AssetApplicationTests"/>
+        </classes>
+    </test>
+    <test name="FullIntegrationTest">
+        <classes>
+            <class name="com.example.demo.FullIntegrationTest"/>
+        </classes>
+    </test>
+</suite>
