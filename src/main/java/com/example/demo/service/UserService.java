@@ -1,9 +1,7 @@
+
 package com.example.demo.service;
-
 import com.example.demo.entity.User;
-
+import java.util.Map;
 public interface UserService {
-    User registerUser(User user);
-    User findByEmail(String email);
-    User findById(Long id);
+    User registerUser(Map<String, String> userData);
 }
