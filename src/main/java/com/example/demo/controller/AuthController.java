@@ -2,7 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.AuthRequest;
 import com.example.demo.dto.AuthResponse;
-import com.example.demo.dto.RegisterRequestDto;  // ← ADD THIS
+import com.example.demo.dto.RegisterRequestDto;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserService;
@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
+import java.util.stream.Collectors;  // ← ADD THIS LINE
 
 @RestController
 @RequestMapping("/auth")
@@ -32,9 +33,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequestDto request) {  // ← FIXED
+    public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequestDto request) {
         try {
-            // Convert DTO to Map for UserService compatibility
             Map<String, String> body = Map.of(
                 "name", request.getName() != null ? request.getName() : "",
                 "email", request.getEmail(),
@@ -62,7 +62,7 @@ public class AuthController {
             User user = userRepo.findByEmail(req.getEmail()).orElseThrow();
             Set<String> roles = user.getRoles().stream()
                 .map(r -> r.getName())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet());  // ← This line needs the import
             String token = jwtUtil.generateToken(user.getEmail(), user.getId(), roles);
             return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getEmail(), roles));
         } catch (Exception e) {
