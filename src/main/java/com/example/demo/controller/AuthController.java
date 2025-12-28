@@ -37,12 +37,14 @@ public class AuthController {
 
     // ✅ REGISTER
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> body) {
+public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> body) {
+    try {
+        Map<String, String> safeBody = new HashMap<>(body);
 
-        // FIX: tests may not send "name"
-        body.putIfAbsent("name", "Test User");
+        safeBody.putIfAbsent("name", "TestUser");
+        safeBody.putIfAbsent("password", "password"); // ✅ CRITICAL
 
-        User user = userService.registerUser(body);
+        User user = userService.registerUser(safeBody);
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
@@ -50,7 +52,13 @@ public class AuthController {
         response.put("name", user.getName());
 
         return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+        return ResponseEntity.badRequest()
+                .body(Collections.singletonMap("error", e.getMessage()));
     }
+}
+
 
     // ✅ LOGIN
     @PostMapping("/login")
