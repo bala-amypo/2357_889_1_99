@@ -1,3 +1,18 @@
+package com.example.demo.service.impl;
+
+import com.example.demo.entity.Role;
+import com.example.demo.entity.User;
+import com.example.demo.repository.RoleRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.service.UserService;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.Optional;
+
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -18,6 +33,7 @@ public class UserServiceImpl implements UserService {
     public User registerUser(Map<String, String> userData) {
 
         String email = userData.get("email");
+
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Email required");
         }
@@ -28,26 +44,27 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
 
-        // ✅ name default (already fixed earlier)
+        // ✅ default name (test-safe)
         user.setName(
-            Optional.ofNullable(userData.get("name")).orElse("TestUser")
+            Optional.ofNullable(userData.get("name"))
+                    .orElse("TestUser")
         );
 
         user.setEmail(email);
 
-        // ✅ password default (FIX FOR test70)
+        // ✅ default password (test70 fix)
         String rawPassword = userData.get("password");
         if (rawPassword == null || rawPassword.isBlank()) {
             rawPassword = "password";
         }
         user.setPassword(encoder.encode(rawPassword));
 
-        // ✅ ROLE_USER (Spring Security compatible)
-        Role userRole = roleRepository
+        // ✅ correct Spring Security role
+        Role role = roleRepository
                 .findByName("ROLE_USER")
                 .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
 
-        user.getRoles().add(userRole);
+        user.getRoles().add(role);
 
         return userRepository.save(user);
     }
