@@ -36,7 +36,7 @@ public class AuthController {
         this.userRepo = userRepo;
     }
 
-    // ✅ REGISTER — MUST RETURN BOOLEAN TRUE (test70 expects this)
+    // ✅ FIXED REGISTER ENDPOINT
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         try {
@@ -48,8 +48,10 @@ public class AuthController {
 
             userService.registerUser(safeBody);
 
-            // 🔥 THIS IS THE CRITICAL FIX
-            return ResponseEntity.ok(true);
+            // ✅ MUST RETURN MAP, NOT BOOLEAN
+            return ResponseEntity.ok(
+                    Collections.singletonMap("success", true)
+            );
 
         } catch (Exception e) {
             return ResponseEntity.badRequest()
@@ -57,7 +59,7 @@ public class AuthController {
         }
     }
 
-    // ✅ LOGIN — already correct, do NOT change
+    // ✅ LOGIN ENDPOINT (NO CHANGE)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest req) {
         try {
