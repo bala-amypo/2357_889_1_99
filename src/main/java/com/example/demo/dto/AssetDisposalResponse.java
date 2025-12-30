@@ -1,6 +1,63 @@
 package com.example.demo.dto;
-public class AuthRequest {
-    private String email; private String password;
-    public String getEmail() { return email; } public void setEmail(String email) { this.email = email; }
-    public String getPassword() { return password; } public void setPassword(String password) { this.password = password; }
+
+import java.time.LocalDate;
+
+public class AssetDisposalResponse {
+
+    private Long id;
+    private String disposalMethod;
+    private double disposalValue;
+    private LocalDate disposalDate;
+    private String assetStatus;
+    private String approvedBy;
+
+    
+    public Long getId() {
+        return id;
+    }
+
+    public String getDisposalMethod() {
+        return disposalMethod;
+    }
+
+    public double getDisposalValue() {
+        return disposalValue;
+    }
+
+    public LocalDate getDisposalDate() {
+        return disposalDate;
+    }
+
+    public String getAssetStatus() {
+        return assetStatus;
+    }
+
+    public String getApprovedBy() {
+        return approvedBy;
+    }
+
+    // Setters
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setDisposalMethod(String disposalMethod) {
+        this.disposalMethod = disposalMethod;
+    }
+
+    public void setDisposalValue(double disposalValue) {
+        this.disposalValue = disposalValue;
+    }
+
+    public void setDisposalDate(LocalDate disposalDate) {
+        this.disposalDate = disposalDate;
+    }
+
+    public void setAssetStatus(String assetStatus) {
+        this.assetStatus = assetStatus;
+    }
+
+    public void setApprovedBy(String approvedBy) {
+        this.approvedBy = approvedBy;
+    }
 }

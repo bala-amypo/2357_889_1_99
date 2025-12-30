@@ -1,54 +1,84 @@
+
 package com.example.demo.controller;
-import com.example.demo.dto.*;
+
+import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
+import com.example.demo.exception.BadRequestException;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.service.UserService;
 import com.example.demo.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.*;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import java.util.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    private final AuthenticationManager authManager;
-    private final JwtUtil jwtUtil;
-    private final UserService userService;
-    private final UserRepository userRepo;
 
-    public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil, UserService userService, UserRepository userRepo) {
-        this.authManager = authManager; this.jwtUtil = jwtUtil; this.userService = userService; this.userRepo = userRepo;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+
+    public AuthController(UserRepository userRepository,
+                          RoleRepository roleRepository,
+                          PasswordEncoder passwordEncoder,
+                          JwtUtil jwtUtil) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> body) {
-        try {
-            User user = userService.registerUser(body);
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", user.getId());
-            response.put("email", user.getEmail());
-            response.put("name", user.getName());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
+    public ResponseEntity<User> register(@RequestBody Map<String, String> body) {
+
+        if (userRepository.findByEmail(body.get("email")).isPresent()) {
+            throw new BadRequestException("Email already registered");
         }
+
+        User user = new User();
+        user.setEmail(body.get("email"));
+        user.setName(body.get("name"));
+        user.setPassword(passwordEncoder.encode(body.get("password")));
+
+        Role role = roleRepository.findByName("USER")
+                .orElseGet(() -> roleRepository.save(new Role("USER")));
+
+        user.getRoles().add(role);
+
+        return ResponseEntity.ok(userRepository.save(user));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest req) {
-        try {
-            Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            User user = userRepo.findByEmail(req.getEmail()).orElseThrow();
-            Set<String> roles = user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toSet());
-            String token = jwtUtil.generateToken(user.getEmail(), user.getId(), roles);
-            return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getEmail(), roles));
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body(Collections.singletonMap("error", "Invalid credentials"));
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) {
+
+        String email = request.get("email");
+        String password = request.get("password");
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BadRequestException("Invalid email or password");
         }
+
+        Set<String> roles = user.getRoles()
+                .stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
+
+        String token = jwtUtil.generateToken(user.getEmail(), user.getId(), roles);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+
+        return ResponseEntity.ok(response);
     }
 }
