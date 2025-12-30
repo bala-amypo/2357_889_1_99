@@ -68,4 +68,4 @@ public class AssetController {
         return ResponseEntity.ok(assetRepository.findByStatus(status));
     }
 }
-lsof -i :9001
+
